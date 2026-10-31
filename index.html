@@ -213,9 +213,11 @@ h1,h2,h3,p{margin:0}
 .opts input:checked + span{background:var(--deep);color:var(--deep-ink)}
 .opts input:focus-visible + span{outline:2px solid var(--accent-text);outline-offset:2px}
 .opts.icons span{width:42px;height:42px;padding:0;justify-content:center;border-radius:12px}
-.since,.mlab{display:none}
+.since,.mlab,.wlab{display:none}
 .modal:has(input[name=kind][value=quit]:checked) .since{display:grid}
 .modal:has(input[name=type][value=monthly]:checked) .mlab{display:inline}
+.modal:has(input[name=type][value=weekly]:checked) .wlab{display:inline}
+.modal:has(input[name=type][value=weekly]:checked) .dlab{display:none}
 .modal:has(input[name=type][value=monthly]:checked) .dlab{display:none}
 .actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
 .actions .sp{margin-right:auto}
@@ -311,7 +313,7 @@ uk:{app:'Маленькі кроки',nav_today:'Сьогодні',nav_goals:'Ц
  m_great:'Чудова робота!',m_good:'Так тримати!',m_ok:'Гарний початок',m_zero:'Час починати',
  streak_t:'Активні дні поспіль',keep:'Так тримати!',first_step:'Зроби перший крок сьогодні',
  tasks_day:'Завдання',habits_day:'Звички',no_tasks:'Поки немає завдань. Створи ціль і додай до неї кроки.',new_goal:'Нова ціль',
- daily:'Щоденне',monthly:'Місячне',per_day:'на день',per_month:'на місяць',this_month:'цього місяця',today_n:'сьогодні',
+ daily:'Щоденне',weekly:'Тижневе',monthly:'Місячне',per_day:'на день',per_week:'на тиждень',per_month:'на місяць',this_month:'цього місяця',week_prog:'{a} із {b} цього тижня',today_n:'сьогодні',
  goals:'Цілі',add_task:'Додати завдання',edit:'Редагувати',no_goal_tasks:'У цій цілі ще немає завдань.',no_goals:'Цілей ще немає. Додай першу.',
  tasks_done_today:'{a} із {b} щоденних виконано',habits:'Звички',new_habit:'Нова звичка',no_habits:'Звичок ще немає. Додай першу.',
  build:'Формувати',quit:'Кинути',build_l:'Формувати звичку',quit_l:'Кинути звичку',
@@ -337,7 +339,7 @@ en:{app:'Small Steps',nav_today:'Today',nav_goals:'Goals',nav_habits:'Habits',na
  m_great:'Great job!',m_good:'Keep going!',m_ok:'Good start',m_zero:'Time to begin',
  streak_t:'Active days in a row',keep:'Keep going!',first_step:'Take the first step today',
  tasks_day:'Tasks',habits_day:'Habits',no_tasks:'No tasks yet. Create a goal and add steps to it.',new_goal:'New goal',
- daily:'Daily',monthly:'Monthly',per_day:'per day',per_month:'per month',this_month:'this month',today_n:'today',
+ daily:'Daily',weekly:'Weekly',monthly:'Monthly',per_day:'per day',per_week:'per week',per_month:'per month',this_month:'this month',week_prog:'{a} of {b} this week',today_n:'today',
  goals:'Goals',add_task:'Add task',edit:'Edit',no_goal_tasks:'This goal has no tasks yet.',no_goals:'No goals yet. Add the first one.',
  tasks_done_today:'{a} of {b} daily tasks done',habits:'Habits',new_habit:'New habit',no_habits:'No habits yet. Add the first one.',
  build:'Build',quit:'Quit',build_l:'Build a habit',quit_l:'Quit a habit',
@@ -364,20 +366,43 @@ var loc=function(){return S.lang==='uk'?'uk-UA':'en-US'};
 function fmt(d,o){return new Intl.DateTimeFormat(loc(),o).format(parse(d))}
 
 /* ---------- state ---------- */
-function seedState(lang){
+function planGoals(lang){
   var uk=lang==='uk';
-  return {v:1,lang:lang,theme:null,updated:0,goals:[],
-    habits:[{id:uid(),title:uk?'Читати 15 сторінок щодня':'Read 15 pages daily',icon:'book',kind:'build',created:TD(),done:{},relapses:[]}]};
+  function task(title,type,target,unit,created){return {id:uid(),title:title,type:type,target:target,unit:unit,created:created,log:{}}}
+  return [
+    {id:uid(),title:uk?'Співбесіда 4 листопада':'Interview on November 4',icon:'target',tasks:[
+      task(uk?'Повторити 2 теми: ООП, БД, мережі, ОС, Git, основи розробки':'Review 2 topics: OOP, databases, networks, OS, Git, SDLC basics','daily',2,uk?'теми':'topics','2026-11-01'),
+      task(uk?'Розв’язати задачу-головоломку':'Solve a puzzle task','daily',1,uk?'задача':'puzzle','2026-11-01'),
+      task(uk?'Відповісти вголос на питання':'Answer questions out loud','daily',3,uk?'питання':'questions','2026-11-01')]},
+    {id:uid(),title:uk?'Python і Data/AI':'Python and Data/AI',icon:'zap',tasks:[
+      task(uk?'Практика Python 45–60 хв':'Python practice 45–60 min','daily',1,uk?'заняття':'session','2026-11-02'),
+      task(uk?'Міні-проєкт на pandas: датасет, очищення, 3 графіки':'pandas mini-project: dataset, cleaning, 3 charts','weekly',1,uk?'проєкт':'project','2026-11-02')]},
+    {id:uid(),title:uk?'Сторінка з відео':'Video page',icon:'video',tasks:[
+      task(uk?'Записати відео для сторінки':'Record videos for the page','weekly',3,uk?'відео':'videos','2026-11-02')]}
+  ];
+}
+function seedState(lang){
+  var uk=lang==='uk',td=TD();
+  function b(title,icon){return {id:uid(),title:title,icon:icon,kind:'build',created:td,done:{},relapses:[]}}
+  return {v:1,lang:lang,theme:null,updated:0,mig:{plan1:1},goals:planGoals(lang),habits:[
+    b(uk?'Склянка води після пробудження':'Glass of water after waking up','drop'),
+    b(uk?'Вправи на кор або йога':'Core exercises or yoga','heart'),
+    b(uk?'10 хвилин тиші: дихання, медитація або прогулянка':'10 minutes of quiet: breathing, meditation or a walk','leaf'),
+    b(uk?'Спланувати день: обрати 3 головні справи':'Plan the day: pick 3 main tasks','target'),
+    b(uk?'Перша година після пробудження без телефону':'First hour after waking up without phone','sun'),
+    b(uk?'Читати 15 сторінок щодня':'Read 15 pages daily','book'),
+    b(uk?'10 000 кроків щодня':'10,000 steps daily','zap'),
+    {id:uid(),title:uk?'Без алкоголю':'No alcohol',icon:'ban',kind:'quit',created:td,since:td,best:0,relapses:[]}]};
 }
 function normalize(d){
   if(!d||typeof d!=='object')return null;
-  d.v=1;d.lang=d.lang==='en'?'en':'uk';d.theme=(d.theme==='light'||d.theme==='dark')?d.theme:null;d.updated=d.updated||0;
+  d.mig=d.mig||{};d.v=1;d.lang=d.lang==='en'?'en':'uk';d.theme=(d.theme==='light'||d.theme==='dark')?d.theme:null;d.updated=d.updated||0;
   d.goals=Array.isArray(d.goals)?d.goals:[];d.habits=Array.isArray(d.habits)?d.habits:[];
   d.goals.forEach(function(g){g.tasks=Array.isArray(g.tasks)?g.tasks:[];g.tasks.forEach(function(k){k.log=k.log||{};k.target=Math.max(1,+k.target||1)})});
   d.habits.forEach(function(h){h.done=h.done||{};h.relapses=h.relapses||[];h.created=h.created||TD();if(h.kind==='quit'&&!h.since)h.since=TD()});
   return d;
 }
-var LS='small-steps-v2';
+var LS='small-steps-v3';
 function loadLocal(){try{var r=localStorage.getItem(LS);return r?JSON.parse(r):null}catch(e){return null}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
@@ -398,6 +423,8 @@ function isDark(){var a=document.documentElement.getAttribute('data-theme');if(a
 
 /* ---------- domain ---------- */
 function monthSum(k,d){var p=d.slice(0,7),s=0;for(var x in k.log)if(x.indexOf(p)===0)s+=k.log[x];return s}
+function weekSum(k,d){var ws=weekStart(d),s=0;for(var i=0;i<7;i++)s+=k.log[addDays(ws,i)]||0;return s}
+function periodSum(k,d){return k.type==='weekly'?weekSum(k,d):monthSum(k,d)}
 function taskOk(k,d){return (k.log[d]||0)>=k.target}
 function dayItems(d){
   var a=[];
@@ -422,7 +449,8 @@ function findGoal(id){return S.goals.filter(function(g){return g.id===id})[0]}
 function findTask(g,id){return g.tasks.filter(function(k){return k.id===id})[0]}
 function findHabit(id){return S.habits.filter(function(h){return h.id===id})[0]}
 function unitTxt(k){return k.unit?' '+esc(k.unit):''}
-function taskTag(k){return k.type==='daily'?k.target+unitTxt(k)+' '+t('per_day'):k.target+unitTxt(k)+' '+t('per_month')}
+function taskTag(k){return k.target+unitTxt(k)+' '+t(k.type==='daily'?'per_day':k.type==='weekly'?'per_week':'per_month')}
+function typeLabel(k){return t(k.type==='daily'?'daily':k.type==='weekly'?'weekly':'monthly')}
 
 /* ---------- views ---------- */
 var TABICON={today:'cal',goals:'target',habits:'flame',reports:'chart'};
@@ -447,11 +475,11 @@ function todayTaskRow(g,k,d){
     ok=v>=k.target;sub=taskTag(k);
     ctrl=k.target===1?'<button class="chk '+(ok?'on':'')+'" data-act="task-set" data-g="'+g.id+'" data-t="'+k.id+'" data-v="'+(ok?0:1)+'" aria-label="'+esc(k.title)+'">'+svg('check',16)+'</button>':stepper(g,k,v,ok);
   }else{
-    var ms=monthSum(k,d);ok=ms>=k.target;
-    sub=t('month_prog',{a:ms,b:k.target})+unitTxt(k);
+    var ms=periodSum(k,d);ok=ms>=k.target;
+    sub=t(k.type==='weekly'?'week_prog':'month_prog',{a:ms,b:k.target})+unitTxt(k);
     ctrl=stepper(g,k,v,false);
   }
-  var bar=k.type==='monthly'?'<div class="bar"><i style="width:'+Math.min(100,monthSum(k,d)/k.target*100)+'%"></i></div>':'';
+  var bar=k.type!=='daily'?'<div class="bar"><i style="width:'+Math.min(100,periodSum(k,d)/k.target*100)+'%"></i></div>':'';
   return '<div class="row '+(ok?'ok':'')+'"><div class="grow"><div class="t">'+esc(k.title)+'</div><div class="s">'+sub+'</div>'+bar+'</div>'+ctrl+'</div>';
 }
 function viewToday(){
@@ -496,12 +524,12 @@ function viewToday(){
 
 function viewGoals(){
   var td=TD(),cards=S.goals.map(function(g){
-    var ratios=g.tasks.map(function(k){return k.type==='daily'?Math.min(1,(k.log[td]||0)/k.target):Math.min(1,monthSum(k,td)/k.target)});
+    var ratios=g.tasks.map(function(k){return k.type==='daily'?Math.min(1,(k.log[td]||0)/k.target):Math.min(1,periodSum(k,td)/k.target)});
     var avg=ratios.length?Math.round(ratios.reduce(function(a,b){return a+b},0)/ratios.length*100):0;
     var dl=g.tasks.filter(function(k){return k.type==='daily'});
     var rows=g.tasks.map(function(k){
-      var v=k.type==='daily'?(k.log[td]||0):monthSum(k,td),p=Math.min(100,v/k.target*100);
-      return '<div class="row"><div class="grow"><div class="t">'+esc(k.title)+'</div><div class="s"><span class="tag">'+(k.type==='daily'?t('daily'):t('monthly'))+'</span> '+taskTag(k)+'</div><div class="bar"><i style="width:'+p+'%"></i></div></div>'+
+      var v=k.type==='daily'?(k.log[td]||0):periodSum(k,td),p=Math.min(100,v/k.target*100);
+      return '<div class="row"><div class="grow"><div class="t">'+esc(k.title)+'</div><div class="s"><span class="tag">'+typeLabel(k)+'</span> '+taskTag(k)+'</div><div class="bar"><i style="width:'+p+'%"></i></div></div>'+
         '<div class="num small">'+v+'/'+k.target+'</div><button class="iconbtn2" data-act="edit-task" data-g="'+g.id+'" data-t="'+k.id+'" aria-label="'+t('edit')+'">'+svg('pencil',16)+'</button></div>';
     }).join('')||'<div class="muted small" style="padding:8px 0">'+t('no_goal_tasks')+'</div>';
     return '<section class="card c6"><div class="hhead" style="margin-bottom:8px"><span class="chip">'+svg(g.icon,20)+'</span><div class="grow"><div class="t">'+esc(g.title)+'</div><div class="s muted small">'+(dl.length?t('tasks_done_today',{a:dl.filter(function(k){return taskOk(k,td)}).length,b:dl.length}):'')+'</div></div><span class="pill">'+avg+'%</span><button class="iconbtn2" data-act="edit-goal" data-g="'+g.id+'" aria-label="'+t('edit')+'">'+svg('pencil',16)+'</button></div>'+
@@ -564,7 +592,7 @@ function viewReports(){
     var rows=g.tasks.map(function(k){
       var vals=days.map(function(d){return k.log[d]||0}),tot=vals.reduce(function(a,b){return a+b},0),sub;
       if(k.type==='daily'){var met=days.filter(function(d){return d>=k.created&&taskOk(k,d)}).length;sub=t('met_days',{a:met,b:N})}
-      else sub=t('month_prog',{a:monthSum(k,td),b:k.target});
+      else sub=t(k.type==='weekly'?'week_prog':'month_prog',{a:periodSum(k,td),b:k.target});
       return '<div class="rrow"><div><div class="t">'+esc(k.title)+'</div><div class="s">'+t('goal_total')+': <b class="num" style="color:var(--ink)">'+tot+'</b>'+unitTxt(k)+'</div><div class="s">'+sub+'</div></div><div>'+bars(vals,56)+axis+'</div></div>';
     }).join('');
     return '<section class="card c12"><div class="hhead" style="margin-bottom:6px"><span class="chip">'+svg(g.icon,20)+'</span><div class="grow"><div class="t">'+esc(g.title)+'</div><div class="muted small">'+t('active_of',{a:ga,b:N})+'</div></div></div>'+rows+'</section>';
@@ -607,8 +635,8 @@ function drawModal(){
   }else if(M.type==='task'){
     var gg=findGoal(M.gid),k=isEdit&&gg?findTask(gg,M.id):null;
     inner='<h2>'+(k?t('e_task'):t('add_task'))+'</h2><label class="fld"><span>'+t('f_title')+'</span><input id="f-title" type="text" name="title" required maxlength="80" value="'+esc(k?k.title:'')+'" placeholder="'+esc(t('ph_task'))+'"></label>'+
-      '<div class="fld"><span>'+t('f_type')+'</span>'+radios('type',k?k.type:'daily',[['daily',t('daily')],['monthly',t('monthly')]])+'</div>'+
-      '<label class="fld"><span>'+t('f_target')+' <span class="dlab">('+t('per_day')+')</span><span class="mlab">('+t('per_month')+')</span></span><input type="number" name="target" min="1" max="9999" required value="'+(k?k.target:1)+'"></label>'+
+      '<div class="fld"><span>'+t('f_type')+'</span>'+radios('type',k?k.type:'daily',[['daily',t('daily')],['weekly',t('weekly')],['monthly',t('monthly')]])+'</div>'+
+      '<label class="fld"><span>'+t('f_target')+' <span class="dlab">('+t('per_day')+')</span><span class="wlab">('+t('per_week')+')</span><span class="mlab">('+t('per_month')+')</span></span><input type="number" name="target" min="1" max="9999" required value="'+(k?k.target:1)+'"></label>'+
       '<label class="fld"><span>'+t('f_unit')+'</span><input type="text" name="unit" maxlength="24" value="'+esc(k?k.unit||'':'')+'" placeholder="'+esc(t('ph_unit'))+'"></label>';
   }else{
     var h=isEdit?findHabit(M.id):null,kind=h?h.kind:'build';
@@ -664,7 +692,7 @@ document.addEventListener('submit',function(e){
     else S.goals.push({id:uid(),title:title,icon:icon||'target',tasks:[]});
   }else if(M.type==='task'){
     var gg=findGoal(M.gid);if(!gg)return;
-    var type=fd.get('type')==='monthly'?'monthly':'daily',target=Math.max(1,parseInt(fd.get('target'),10)||1),unit=String(fd.get('unit')||'').trim();
+    var type=({monthly:1,weekly:1})[fd.get('type')]?fd.get('type'):'daily',target=Math.max(1,parseInt(fd.get('target'),10)||1),unit=String(fd.get('unit')||'').trim();
     if(M.id){var k=findTask(gg,M.id);if(k){k.title=title;k.type=type;k.target=target;k.unit=unit}}
     else gg.tasks.push({id:uid(),title:title,type:type,target:target,unit:unit,created:TD(),log:{}});
   }else{
@@ -685,6 +713,13 @@ window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(
 (function(){var h=location.hash.slice(1);if(['today','goals','habits','reports'].indexOf(h)>-1)tab=h})();
 var local=normalize(loadLocal());
 S=local||seedState((navigator.language||'uk').toLowerCase().indexOf('en')===0?'en':'uk');
+var pending=false;
+function migrate(){
+  if(S.mig&&S.mig.plan1)return false;
+  S.mig=S.mig||{};S.mig.plan1=1;S.goals=S.goals.concat(planGoals(S.lang));
+  S.updated=Date.now();saveLocal();pending=true;return true;
+}
+if(local)migrate();
 applyTheme();render();
 (function(){
   var c=window.claude;
@@ -694,14 +729,15 @@ applyTheme();render();
     if(!user||!dbns){setSync('local');return}
     return user.id().then(function(id){
       if(!id){setSync('local');return}
-      ref=dbns.doc('data/users/'+id+'/tracker-v2');
+      ref=dbns.doc('data/users/'+id+'/tracker-v3');
       var slow=setTimeout(function(){if(sync!=='saved')setSync('slow')},10000);
       ref.onSnapshot(function(snap){
         if(snap.metadata&&snap.metadata.hasPendingWrites)return;
         var data=snap.exists?snap.data():null;
         if(!snap.metadata||!snap.metadata.fromCache){clearTimeout(slow)}
         if(data&&data.v){
-          if((data.updated||0)>(S.updated||0)){S=normalize(data);saveLocal();applyTheme();render()}
+          if((data.updated||0)>(S.updated||0)){S=normalize(data);migrate();saveLocal();applyTheme();render()}
+          if(pending){pending=false;dirty=true;setSync('saving');flush()}
           if(!snap.metadata||!snap.metadata.fromCache)setSync('saved');
         }else if(!snap.metadata||!snap.metadata.fromCache){
           if(S.updated){dirty=true;setSync('saving');flush()}else setSync('saved');
