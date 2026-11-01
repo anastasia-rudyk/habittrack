@@ -204,7 +204,7 @@ h1,h2,h3,p{margin:0}
 .modal{background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:24px;width:min(460px,100%);display:grid;gap:16px;max-height:100%;overflow:auto}
 .modal h2{font-size:20px}
 .fld{display:grid;gap:6px;font-weight:700;font-size:13px;color:var(--muted)}
-.fld input[type=text],.fld input[type=number],.fld input[type=date]{width:100%;padding:11px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;font-size:15px}
+.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld input[type=time]{width:100%;padding:11px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;font-size:15px}
 .fld input:focus{outline:2px solid var(--accent);border-color:transparent}
 .opts{display:flex;gap:8px;flex-wrap:wrap}
 .opts label{position:relative}
@@ -232,7 +232,7 @@ h1,h2,h3,p{margin:0}
 }
 html{-webkit-text-size-adjust:100%}
 button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.fld input[type=text],.fld input[type=number],.fld input[type=date]{font-size:16px}
+.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld input[type=time]{font-size:16px}
 @media (max-width:620px){
   .top{padding:10px 0}
   .hero{min-height:0;gap:12px}
@@ -255,6 +255,20 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 }
 @media (max-width:480px){.brand span:last-child{display:none}}
 @media (max-width:380px){.seg button{padding:6px 8px}.sync{display:none}}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.pday{display:grid;gap:8px;align-content:start;padding:18px}
+.pday.today{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
+.pdh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pdh b{text-transform:capitalize;font-size:16px}
+.uni{display:flex;align-items:center;gap:8px;background:var(--surface2);color:var(--muted);border-radius:12px;padding:7px 10px;font-size:13px;font-weight:700}
+.prow{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.prow .chk{width:26px;height:26px;margin-top:1px}
+.prow .t{font-weight:700;overflow-wrap:anywhere;font-size:14px}
+.prow.dn .t{text-decoration:line-through;color:var(--muted)}
+.prow .s{font-size:12px;color:var(--muted)}
+.pweek{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pweek .dl{font-weight:800;font-size:17px;letter-spacing:-.01em}
+@media (max-width:620px){.prow .chk{width:32px;height:32px}.pgrid{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -298,6 +312,7 @@ var IC={
  star:'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>',
  video:'<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
  ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+ list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
  left:'<path d="m15 18-6-6 6-6"/>',right:'<path d="m9 18 6-6-6-6"/>'
 };
 var PICK=['video','target','leaf','drop','zap','book','moon','sun','heart','star','ban'];
@@ -305,7 +320,7 @@ function svg(n,size,fill){size=size||20;return '<svg class="ic" width="'+size+'"
 
 /* ---------- i18n ---------- */
 var T={
-uk:{app:'Маленькі кроки',nav_today:'Сьогодні',nav_goals:'Цілі',nav_habits:'Звички',nav_reports:'Звіти',theme:'Змінити тему',
+uk:{app:'Маленькі кроки',nav_today:'Сьогодні',nav_planner:'Планер',nav_goals:'Цілі',nav_habits:'Звички',nav_reports:'Звіти',theme:'Змінити тему',
  hero1:'Маленькі звички,',hero2:'великі зміни.',hero_p:'Став цілі, розбивай їх на щоденні та місячні кроки й тримай вогник звичок.',
  hi_m:'Доброго ранку',hi_d:'Добрий день',hi_e:'Добрий вечір',hi_n:'Доброї ночі',
  today:'Сьогодні',back_today:'До сьогодні',prev_day:'Попередній день',next_day:'Наступний день',
@@ -324,14 +339,14 @@ uk:{app:'Маленькі кроки',nav_today:'Сьогодні',nav_goals:'Ц
  by_goal:'За цілями',active_of:'Активних днів: {a} із {b}',goal_total:'Усього',met_days:'ціль виконана {a} із {b} днів',month_prog:'{a} із {b} цього місяця',
  mo_over:'Місячний огляд',best_week:'Найкращий тиждень',week:'Тиждень {n}',completion:'виконання',
  rep_habits:'Звички за період',checks:'{a} із {b} днів',no_data:'Додай цілі чи звички, щоб бачити звіти.',
- e_goal:'Редагувати ціль',e_task:'Редагувати завдання',e_habit:'Редагувати звичку',
+ e_goal:'Редагувати ціль',planner:'Планер',pl_this:'Цей тиждень',pl_prev:'Попередній тиждень',pl_next:'Наступний тиждень',pl_add:'Додати',pl_empty:'Нічого не заплановано',pl_uni:'Пари',pl_prog:'Виконано {a} із {b}',pl_none:'На цей тиждень поки порожньо',f_date:'Дата',f_time:'Час (необов’язково)',f_cat:'Напрям',ph_plan:'Наприклад: Практика Python 45 хв',e_plan:'Редагувати пункт',new_plan:'Новий пункт',c_interview:'Співбесіда',c_python:'Python',c_video:'Відео',c_other:'Інше',e_task:'Редагувати завдання',e_habit:'Редагувати звичку',
  f_title:'Назва',f_icon:'Іконка',f_type:'Тип',f_target:'Скільки',f_unit:'Одиниця (необов’язково)',f_kind:'Вид',f_since:'Коли востаннє',
  ph_goal:'Наприклад: Вести TikTok-акаунт',ph_task:'Наприклад: Викласти відео',ph_unit:'відео, хвилин, разів',ph_habit:'Наприклад: Склянка води зранку',
  save:'Зберегти',del:'Видалити',del_ok:'Підтвердити видалення',
  ex_note:'Це приклади, щоб показати, як усе працює. Видали їх, коли будеш готова.',ex_rm:'Видалити приклади',
  s_saved:'Збережено',s_saving:'Збереження…',s_local:'Лише на цьому пристрої',s_error:'Не вдалося зберегти',s_slow:'Чекаю на синхронізацію',
  lines:['Прогрес, а не досконалість.','Маленькі кроки щодня ведуть до великих результатів.','Не пропускай двічі поспіль.','Почни з найменшого кроку.','Постійність важливіша за швидкість.']},
-en:{app:'Small Steps',nav_today:'Today',nav_goals:'Goals',nav_habits:'Habits',nav_reports:'Reports',theme:'Switch theme',
+en:{app:'Small Steps',nav_today:'Today',nav_planner:'Planner',nav_goals:'Goals',nav_habits:'Habits',nav_reports:'Reports',theme:'Switch theme',
  hero1:'Small habits,',hero2:'big changes.',hero_p:'Set goals, break them into daily and monthly steps, and keep your habit flames burning.',
  hi_m:'Good morning',hi_d:'Good afternoon',hi_e:'Good evening',hi_n:'Good night',
  today:'Today',back_today:'Back to today',prev_day:'Previous day',next_day:'Next day',
@@ -350,7 +365,7 @@ en:{app:'Small Steps',nav_today:'Today',nav_goals:'Goals',nav_habits:'Habits',na
  by_goal:'By goal',active_of:'Active days: {a} of {b}',goal_total:'Total',met_days:'target met on {a} of {b} days',month_prog:'{a} of {b} this month',
  mo_over:'Monthly overview',best_week:'Best week',week:'Week {n}',completion:'completion',
  rep_habits:'Habits in this period',checks:'{a} of {b} days',no_data:'Add goals or habits to see reports.',
- e_goal:'Edit goal',e_task:'Edit task',e_habit:'Edit habit',
+ e_goal:'Edit goal',planner:'Planner',pl_this:'This week',pl_prev:'Previous week',pl_next:'Next week',pl_add:'Add',pl_empty:'Nothing planned',pl_uni:'Classes',pl_prog:'{a} of {b} done',pl_none:'Nothing planned for this week yet',f_date:'Date',f_time:'Time (optional)',f_cat:'Area',ph_plan:'For example: Python practice 45 min',e_plan:'Edit item',new_plan:'New item',c_interview:'Interview',c_python:'Python',c_video:'Video',c_other:'Other',e_task:'Edit task',e_habit:'Edit habit',
  f_title:'Title',f_icon:'Icon',f_type:'Type',f_target:'How many',f_unit:'Unit (optional)',f_kind:'Kind',f_since:'Last time',
  ph_goal:'For example: Grow my TikTok account',ph_task:'For example: Post videos',ph_unit:'videos, minutes, times',ph_habit:'For example: Water first thing',
  save:'Save',del:'Delete',del_ok:'Confirm delete',
@@ -381,10 +396,32 @@ function planGoals(lang){
       task(uk?'Записати відео для сторінки':'Record videos for the page','weekly',3,uk?'відео':'videos','2026-11-02')]}
   ];
 }
+function planItems(lang){
+  var uk=lang==='uk',o=[];
+  function p(date,cat,title,time){o.push({id:uid(),date:date,time:time||'',cat:cat,title:title,done:false})}
+  p('2026-11-01','interview',uk?'ООП і бази даних: 2 теми':'OOP and databases: 2 topics');
+  p('2026-11-02','interview',uk?'Мережі й ОС: 2 теми':'Networks and OS: 2 topics');
+  p('2026-11-02','python',uk?'Практика Python 45 хв':'Python practice 45 min');
+  p('2026-11-03','interview',uk?'Git і основи розробки: 2 теми':'Git and development basics: 2 topics');
+  p('2026-11-03','python',uk?'Практика Python 45 хв':'Python practice 45 min');
+  p('2026-11-04','interview',uk?'Швидкий огляд слабких місць':'Quick review of weak spots');
+  p('2026-11-04','interview',uk?'Співбесіда':'Interview');
+  p('2026-11-04','interview',uk?'Записати, про що питали':'Write down what they asked');
+  p('2026-11-04','python',uk?'Практика Python 45 хв':'Python practice 45 min');
+  p('2026-11-05','python',uk?'Практика Python 1 год':'Python practice 1 h');
+  p('2026-11-05','video',uk?'Вибрати 3 теми для відео':'Pick 3 video topics');
+  p('2026-11-06','python',uk?'Практика Python 1 год':'Python practice 1 h');
+  p('2026-11-06','video',uk?'Написати сценарії':'Write the scripts');
+  p('2026-11-07','python',uk?'Міні-проєкт на pandas':'pandas mini-project');
+  p('2026-11-07','video',uk?'Озвучка й запис відео':'Voiceover and recording');
+  p('2026-11-08','python',uk?'Закінчити міні-проєкт':'Finish the mini-project');
+  p('2026-11-08','video',uk?'Змонтувати й запланувати публікації':'Edit and schedule posts');
+  return o;
+}
 function seedState(lang){
   var uk=lang==='uk',td=TD();
   function b(title,icon){return {id:uid(),title:title,icon:icon,kind:'build',created:td,done:{},relapses:[]}}
-  return {v:1,lang:lang,theme:null,updated:0,mig:{plan1:1},goals:planGoals(lang),habits:[
+  return {v:1,lang:lang,theme:null,updated:0,mig:{plan1:1,plan2:1},plan:planItems(lang),goals:planGoals(lang),habits:[
     b(uk?'Склянка води після пробудження':'Glass of water after waking up','drop'),
     b(uk?'Вправи на кор або йога':'Core exercises or yoga','heart'),
     b(uk?'10 хвилин тиші: дихання, медитація або прогулянка':'10 minutes of quiet: breathing, meditation or a walk','leaf'),
@@ -397,7 +434,7 @@ function seedState(lang){
 function normalize(d){
   if(!d||typeof d!=='object')return null;
   d.mig=d.mig||{};d.v=1;d.lang=d.lang==='en'?'en':'uk';d.theme=(d.theme==='light'||d.theme==='dark')?d.theme:null;d.updated=d.updated||0;
-  d.goals=Array.isArray(d.goals)?d.goals:[];d.habits=Array.isArray(d.habits)?d.habits:[];
+  d.plan=Array.isArray(d.plan)?d.plan:[];d.goals=Array.isArray(d.goals)?d.goals:[];d.habits=Array.isArray(d.habits)?d.habits:[];
   d.goals.forEach(function(g){g.tasks=Array.isArray(g.tasks)?g.tasks:[];g.tasks.forEach(function(k){k.log=k.log||{};k.target=Math.max(1,+k.target||1)})});
   d.habits.forEach(function(h){h.done=h.done||{};h.relapses=h.relapses||[];h.created=h.created||TD();if(h.kind==='quit'&&!h.since)h.since=TD()});
   return d;
@@ -452,10 +489,15 @@ function unitTxt(k){return k.unit?' '+esc(k.unit):''}
 function taskTag(k){return k.target+unitTxt(k)+' '+t(k.type==='daily'?'per_day':k.type==='weekly'?'per_week':'per_month')}
 function typeLabel(k){return t(k.type==='daily'?'daily':k.type==='weekly'?'weekly':'monthly')}
 
+var UNI={1:['11:40','14:35'],2:['10:05','16:10'],3:['11:40','16:10'],4:['11:40','16:10'],5:['10:05','13:00']};
+var PW=weekStart(TD());
+function findPlan(id){return S.plan.filter(function(p){return p.id===id})[0]}
+function catName(c){return t('c_'+(c==='interview'||c==='python'||c==='video'?c:'other'))}
+
 /* ---------- views ---------- */
-var TABICON={today:'cal',goals:'target',habits:'flame',reports:'chart'};
+var TABICON={today:'cal',planner:'list',goals:'target',habits:'flame',reports:'chart'};
 function header(){
-  var tabs=['today','goals','habits','reports'].map(function(k){return '<button class="tab '+(tab===k?'on':'')+'" data-act="nav" data-k="'+k+'" '+(tab===k?'aria-current="page"':'')+'>'+svg(TABICON[k],18)+'<span>'+t('nav_'+k)+'</span></button>'}).join('');
+  var tabs=['today','planner','goals','habits','reports'].map(function(k){return '<button class="tab '+(tab===k?'on':'')+'" data-act="nav" data-k="'+k+'" '+(tab===k?'aria-current="page"':'')+'>'+svg(TABICON[k],18)+'<span>'+t('nav_'+k)+'</span></button>'}).join('');
   return '<header class="top"><div class="brand"><span class="logo">'+svg('leaf',20)+'</span><span>'+t('app')+'</span></div>'+
     '<nav class="tabs">'+tabs+'</nav>'+
     '<div class="tools"><span id="sync" class="sync '+sync+'" title="'+t('s_'+sync)+'">'+t('s_'+sync)+'</span>'+
@@ -616,8 +658,28 @@ function viewReports(){
   return '<div class="sechead"><h1>'+t('rep')+'</h1><div class="ranges">'+rg+'</div></div>'+tiles+'<div class="grid">'+mo+hcard+'<div class="c12 muted small ghead" style="margin-top:6px">'+t('by_goal')+'</div>'+goals+'</div>';
 }
 
+function viewPlanner(){
+  var td=TD(),ws=PW,we=addDays(ws,6),mine=S.plan.filter(function(p){return p.date>=ws&&p.date<=we});
+  var done=mine.filter(function(p){return p.done}).length,pct=mine.length?done/mine.length*100:0,cards='';
+  for(var i=0;i<7;i++){
+    var d=addDays(ws,i),list=S.plan.filter(function(p){return p.date===d}).sort(function(a,b){var x=a.time||'99:99',y=b.time||'99:99';return x<y?-1:x>y?1:0});
+    var u=UNI[parse(d).getDay()];
+    var rows=list.map(function(p){
+      return '<div class="prow '+(p.done?'dn':'')+'"><button class="chk '+(p.done?'on':'')+'" data-act="plan-toggle" data-p="'+p.id+'" aria-label="'+esc(p.title)+'">'+svg('check',14)+'</button><div class="grow" style="flex:1;min-width:0"><div class="t">'+esc(p.title)+'</div><div class="s">'+(p.time?esc(p.time)+' · ':'')+catName(p.cat)+'</div></div><button class="iconbtn2" data-act="edit-plan" data-p="'+p.id+'" aria-label="'+t('edit')+'">'+svg('pencil',15)+'</button></div>';
+    }).join('');
+    cards+='<section class="card pday '+(d===td?'today':'')+'"><div class="pdh"><div><b>'+fmt(d,{weekday:'long'})+'</b><div class="muted small">'+fmt(d,{day:'numeric',month:'long'})+'</div></div>'+(list.length?'<span class="pill">'+list.filter(function(p){return p.done}).length+'/'+list.length+'</span>':'')+'</div>'+
+      (u?'<div class="uni">'+svg('book',15)+t('pl_uni')+' '+u[0]+'–'+u[1]+'</div>':'')+
+      (rows||'<div class="muted small" style="padding:6px 0">'+t('pl_empty')+'</div>')+
+      '<button class="btn soft sm" data-act="new-plan" data-d="'+d+'" style="justify-self:start">'+svg('plus',14)+t('pl_add')+'</button></section>';
+  }
+  var nav='<div class="pweek"><button class="icon-btn" data-act="plan-week" data-n="-1" aria-label="'+t('pl_prev')+'">'+svg('left',18)+'</button><span class="dl">'+fmt(ws,{day:'numeric',month:'short'})+' – '+fmt(we,{day:'numeric',month:'short'})+'</span><button class="icon-btn" data-act="plan-week" data-n="1" aria-label="'+t('pl_next')+'">'+svg('right',18)+'</button>'+(ws===weekStart(td)?'':'<button class="btn soft sm" data-act="plan-week" data-n="0">'+t('pl_this')+'</button>')+'</div>';
+  return '<div class="sechead"><h1>'+t('planner')+'</h1><button class="btn" data-act="new-plan" data-d="'+(td>=ws&&td<=we?td:ws)+'">'+svg('plus',16)+t('new_plan')+'</button></div>'+
+    '<section class="card" style="margin-bottom:16px;display:grid;gap:10px">'+nav+'<div class="kv"><span>'+(mine.length?t('pl_prog',{a:done,b:mine.length}):t('pl_none'))+'</span><b class="num">'+Math.round(pct)+'%</b></div><div class="bar" style="margin:0"><i style="width:'+pct+'%"></i></div></section>'+
+    '<div class="pgrid">'+cards+'</div>';
+}
+
 function render(){
-  var v=tab==='goals'?viewGoals():tab==='habits'?viewHabits():tab==='reports'?viewReports():viewToday();
+  var v=tab==='planner'?viewPlanner():tab==='goals'?viewGoals():tab==='habits'?viewHabits():tab==='reports'?viewReports():viewToday();
   $('#app').innerHTML=header()+'<main>'+banner()+v+'</main>';
 }
 
@@ -638,6 +700,12 @@ function drawModal(){
       '<div class="fld"><span>'+t('f_type')+'</span>'+radios('type',k?k.type:'daily',[['daily',t('daily')],['weekly',t('weekly')],['monthly',t('monthly')]])+'</div>'+
       '<label class="fld"><span>'+t('f_target')+' <span class="dlab">('+t('per_day')+')</span><span class="wlab">('+t('per_week')+')</span><span class="mlab">('+t('per_month')+')</span></span><input type="number" name="target" min="1" max="9999" required value="'+(k?k.target:1)+'"></label>'+
       '<label class="fld"><span>'+t('f_unit')+'</span><input type="text" name="unit" maxlength="24" value="'+esc(k?k.unit||'':'')+'" placeholder="'+esc(t('ph_unit'))+'"></label>';
+  }else if(M.type==='plan'){
+    var pp=isEdit?findPlan(M.id):null;
+    inner='<h2>'+(pp?t('e_plan'):t('new_plan'))+'</h2><label class="fld"><span>'+t('f_title')+'</span><input id="f-title" type="text" name="title" required maxlength="100" value="'+esc(pp?pp.title:'')+'" placeholder="'+esc(t('ph_plan'))+'"></label>'+
+      '<label class="fld"><span>'+t('f_date')+'</span><input type="date" name="date" required value="'+(pp?pp.date:(M.date||TD()))+'"></label>'+
+      '<label class="fld"><span>'+t('f_time')+'</span><input type="time" name="time" value="'+(pp?pp.time||'':'')+'"></label>'+
+      '<div class="fld"><span>'+t('f_cat')+'</span>'+radios('cat',pp?pp.cat:'other',[['interview',t('c_interview')],['python',t('c_python')],['video',t('c_video')],['other',t('c_other')]])+'</div>';
   }else{
     var h=isEdit?findHabit(M.id):null,kind=h?h.kind:'build';
     inner='<h2>'+(h?t('e_habit'):t('new_habit'))+'</h2><label class="fld"><span>'+t('f_title')+'</span><input id="f-title" type="text" name="title" required maxlength="80" value="'+esc(h?h.title:'')+'" placeholder="'+esc(t('ph_habit'))+'"></label>'+
@@ -666,6 +734,10 @@ document.addEventListener('click',function(e){
     case 'relapse-ask':UI.relapse=ds.h;render();break;
     case 'relapse-cancel':UI.relapse=null;render();break;
     case 'relapse-do':h=findHabit(ds.h);if(h){var days=quitDays(h);h.relapses.push({date:TD(),days:days});h.best=Math.max(h.best||0,days);h.since=TD();UI.relapse=null;save()}break;
+    case 'plan-toggle':{var pi=findPlan(ds.p);if(pi){pi.done=!pi.done;save()}break}
+    case 'plan-week':{var nn=+ds.n;PW=nn===0?weekStart(TD()):addDays(PW,nn*7);render();break}
+    case 'new-plan':openModal({type:'plan',date:ds.d});break;
+    case 'edit-plan':openModal({type:'plan',id:ds.p});break;
     case 'new-goal':openModal({type:'goal'});break;
     case 'edit-goal':openModal({type:'goal',id:ds.g});break;
     case 'new-task':openModal({type:'task',gid:ds.g});break;
@@ -678,6 +750,7 @@ document.addEventListener('click',function(e){
       if(!M.confirm){M.confirm=true;drawModal();break}
       if(M.type==='goal')S.goals=S.goals.filter(function(x){return x.id!==M.id});
       else if(M.type==='task'){g=findGoal(M.gid);if(g)g.tasks=g.tasks.filter(function(x){return x.id!==M.id})}
+      else if(M.type==='plan')S.plan=S.plan.filter(function(x){return x.id!==M.id});
       else S.habits=S.habits.filter(function(x){return x.id!==M.id});
       closeModal();save();break;
     case 'rm-ex':S.goals=S.goals.filter(function(x){return !x.ex});S.habits=S.habits.filter(function(x){return !x.ex});save();break;
@@ -695,6 +768,12 @@ document.addEventListener('submit',function(e){
     var type=({monthly:1,weekly:1})[fd.get('type')]?fd.get('type'):'daily',target=Math.max(1,parseInt(fd.get('target'),10)||1),unit=String(fd.get('unit')||'').trim();
     if(M.id){var k=findTask(gg,M.id);if(k){k.title=title;k.type=type;k.target=target;k.unit=unit}}
     else gg.tasks.push({id:uid(),title:title,type:type,target:target,unit:unit,created:TD(),log:{}});
+  }else if(M.type==='plan'){
+    var pd=String(fd.get('date')||'');if(!pd)return;
+    var pc=String(fd.get('cat')||'other'),pt=String(fd.get('time')||'');
+    if(M.id){var pe=findPlan(M.id);if(pe){pe.title=title;pe.date=pd;pe.time=pt;pe.cat=pc}}
+    else S.plan.push({id:uid(),date:pd,time:pt,cat:pc,title:title,done:false});
+    PW=weekStart(pd);
   }else{
     var kind=fd.get('kind')==='quit'?'quit':'build',since=String(fd.get('since')||TD());if(since>TD())since=TD();
     if(M.id){var h=findHabit(M.id);if(h){h.title=title;h.icon=icon||h.icon;if(h.kind==='quit'&&fd.get('since'))h.since=since}}
@@ -707,17 +786,19 @@ document.addEventListener('submit',function(e){
   closeModal();save();
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&M)closeModal()});
-window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(['today','goals','habits','reports'].indexOf(h)>-1&&h!==tab){tab=h;render()}});
+window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(['today','planner','goals','habits','reports'].indexOf(h)>-1&&h!==tab){tab=h;render()}});
 
 /* ---------- init ---------- */
-(function(){var h=location.hash.slice(1);if(['today','goals','habits','reports'].indexOf(h)>-1)tab=h})();
+(function(){var h=location.hash.slice(1);if(['today','planner','goals','habits','reports'].indexOf(h)>-1)tab=h})();
 var local=normalize(loadLocal());
 S=local||seedState((navigator.language||'uk').toLowerCase().indexOf('en')===0?'en':'uk');
 var pending=false;
 function migrate(){
-  if(S.mig&&S.mig.plan1)return false;
-  S.mig=S.mig||{};S.mig.plan1=1;S.goals=S.goals.concat(planGoals(S.lang));
-  S.updated=Date.now();saveLocal();pending=true;return true;
+  var ch=false;S.mig=S.mig||{};
+  if(!S.mig.plan1){S.mig.plan1=1;S.goals=S.goals.concat(planGoals(S.lang));ch=true}
+  if(!S.mig.plan2){S.mig.plan2=1;S.plan=(S.plan||[]).concat(planItems(S.lang));ch=true}
+  if(ch){S.updated=Date.now();saveLocal();pending=true}
+  return ch;
 }
 if(local)migrate();
 applyTheme();render();
