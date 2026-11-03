@@ -269,8 +269,22 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .pweek{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pweek .dl{font-weight:800;font-size:17px;letter-spacing:-.01em}
 @media (max-width:620px){.prow .chk{width:32px;height:32px}.pgrid{grid-template-columns:minmax(0,1fr)}}
+.sync.signin{display:inline-flex!important;font-size:13px!important;gap:6px!important;background:var(--deep);color:var(--deep-ink);padding:8px 14px;border-radius:999px;font-weight:700}
+.sync.signin::before{background:var(--flame)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
+<script>
+/* ВСТАВ СВІЙ КОНФІГ FIREBASE: Project settings -> Your apps -> Web app -> firebaseConfig.
+   Заміни рядки з PASTE на свої значення. Поки там PASTE, сайт працює без синхронізації. */
+window.FIREBASE_CONFIG={
+  apiKey:"PASTE_API_KEY",
+  authDomain:"PASTE_PROJECT_ID.firebaseapp.com",
+  projectId:"PASTE_PROJECT_ID",
+  storageBucket:"PASTE_PROJECT_ID.firebasestorage.app",
+  messagingSenderId:"PASTE_SENDER_ID",
+  appId:"PASTE_APP_ID"
+};
+</script>
 </head>
 <body>
 
@@ -312,6 +326,7 @@ var IC={
  star:'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>',
  video:'<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
  ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+ logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
  left:'<path d="m15 18-6-6 6-6"/>',right:'<path d="m9 18 6-6-6-6"/>'
 };
@@ -344,7 +359,7 @@ uk:{app:'Маленькі кроки',nav_today:'Сьогодні',nav_planner:'
  ph_goal:'Наприклад: Вести TikTok-акаунт',ph_task:'Наприклад: Викласти відео',ph_unit:'відео, хвилин, разів',ph_habit:'Наприклад: Склянка води зранку',
  save:'Зберегти',del:'Видалити',del_ok:'Підтвердити видалення',
  ex_note:'Це приклади, щоб показати, як усе працює. Видали їх, коли будеш готова.',ex_rm:'Видалити приклади',
- s_saved:'Збережено',s_saving:'Збереження…',s_local:'Лише на цьому пристрої',s_error:'Не вдалося зберегти',s_slow:'Чекаю на синхронізацію',
+ s_signin:'Увійти',signin_t:'Увійти через Google, щоб синхронізувати пристрої',signout:'Вийти',s_saved:'Збережено',s_saving:'Збереження…',s_local:'Лише на цьому пристрої',s_error:'Не вдалося зберегти',s_slow:'Чекаю на синхронізацію',
  lines:['Прогрес, а не досконалість.','Маленькі кроки щодня ведуть до великих результатів.','Не пропускай двічі поспіль.','Почни з найменшого кроку.','Постійність важливіша за швидкість.']},
 en:{app:'Small Steps',nav_today:'Today',nav_planner:'Planner',nav_goals:'Goals',nav_habits:'Habits',nav_reports:'Reports',theme:'Switch theme',
  hero1:'Small habits,',hero2:'big changes.',hero_p:'Set goals, break them into daily and monthly steps, and keep your habit flames burning.',
@@ -370,7 +385,7 @@ en:{app:'Small Steps',nav_today:'Today',nav_planner:'Planner',nav_goals:'Goals',
  ph_goal:'For example: Grow my TikTok account',ph_task:'For example: Post videos',ph_unit:'videos, minutes, times',ph_habit:'For example: Water first thing',
  save:'Save',del:'Delete',del_ok:'Confirm delete',
  ex_note:'These are examples to show how everything works. Remove them when you are ready.',ex_rm:'Remove examples',
- s_saved:'Saved',s_saving:'Saving…',s_local:'This device only',s_error:'Could not save',s_slow:'Waiting to sync',
+ s_signin:'Sign in',signin_t:'Sign in with Google to sync your devices',signout:'Sign out',s_saved:'Saved',s_saving:'Saving…',s_local:'This device only',s_error:'Could not save',s_slow:'Waiting to sync',
  lines:['Progress, not perfection.','Small steps every day lead to big results.','Never miss twice in a row.','Start with the smallest step.','Consistency beats speed.']}
 };
 var S,UI={relapse:null},M=null,tab='today',VD=TD(),RG='7',sync='local';
@@ -444,8 +459,8 @@ function loadLocal(){try{var r=localStorage.getItem(LS);return r?JSON.parse(r):n
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 
 /* ---------- persistence (db, private per viewer) ---------- */
-var ref=null,writing=false,dirty=false,timer=null;
-function setSync(s){sync=s;var el=$('#sync');if(el){el.className='sync '+s;el.textContent=t('s_'+s);el.title=t('s_'+s)}}
+var ref=null,writing=false,dirty=false,timer=null,FB=null,unsub=null;
+function setSync(s){var was=sync;sync=s;if((was==='signin')!==(s==='signin')){if(S&&$('#app'))render();return}var el=$('#sync');if(el){el.className='sync '+s;el.textContent=t('s_'+s);el.title=t('s_'+s)}}
 function save(){
   S.updated=Date.now();saveLocal();render();
   if(ref){dirty=true;setSync('saving');clearTimeout(timer);timer=setTimeout(flush,500)}
@@ -496,11 +511,15 @@ function catName(c){return t('c_'+(c==='interview'||c==='python'||c==='video'?c:
 
 /* ---------- views ---------- */
 var TABICON={today:'cal',planner:'list',goals:'target',habits:'flame',reports:'chart'};
+function syncEl(){
+  if(sync==='signin')return '<button id="sync" class="sync signin" data-act="signin" title="'+esc(t('signin_t'))+'">'+t('s_signin')+'</button>';
+  return '<span id="sync" class="sync '+sync+'" title="'+t('s_'+sync)+'">'+t('s_'+sync)+'</span>'+(FB&&FB.user?'<button class="icon-btn" data-act="signout" aria-label="'+t('signout')+'" title="'+t('signout')+'">'+svg('logout',18)+'</button>':'');
+}
 function header(){
   var tabs=['today','planner','goals','habits','reports'].map(function(k){return '<button class="tab '+(tab===k?'on':'')+'" data-act="nav" data-k="'+k+'" '+(tab===k?'aria-current="page"':'')+'>'+svg(TABICON[k],18)+'<span>'+t('nav_'+k)+'</span></button>'}).join('');
   return '<header class="top"><div class="brand"><span class="logo">'+svg('leaf',20)+'</span><span>'+t('app')+'</span></div>'+
     '<nav class="tabs">'+tabs+'</nav>'+
-    '<div class="tools"><span id="sync" class="sync '+sync+'" title="'+t('s_'+sync)+'">'+t('s_'+sync)+'</span>'+
+    '<div class="tools">'+syncEl()+
     '<div class="seg" role="group"><button class="'+(S.lang==='uk'?'on':'')+'" data-act="lang" data-k="uk">UA</button><button class="'+(S.lang==='en'?'on':'')+'" data-act="lang" data-k="en">EN</button></div>'+
     '<button class="icon-btn" data-act="theme" aria-label="'+t('theme')+'">'+svg(isDark()?'sun':'moon',18)+'</button></div></header>';
 }
@@ -734,6 +753,8 @@ document.addEventListener('click',function(e){
     case 'relapse-ask':UI.relapse=ds.h;render();break;
     case 'relapse-cancel':UI.relapse=null;render();break;
     case 'relapse-do':h=findHabit(ds.h);if(h){var days=quitDays(h);h.relapses.push({date:TD(),days:days});h.best=Math.max(h.best||0,days);h.since=TD();UI.relapse=null;save()}break;
+    case 'signin':if(FB){FB.auth.signInWithPopup(FB.provider).catch(function(e){var c=e&&e.code;if(c==='auth/popup-blocked'||c==='auth/operation-not-supported-in-this-environment')return FB.auth.signInWithRedirect(FB.provider);if(c!=='auth/popup-closed-by-user'&&c!=='auth/cancelled-popup-request')setSync('error')})}break;
+    case 'signout':if(FB)FB.auth.signOut();break;
     case 'plan-toggle':{var pi=findPlan(ds.p);if(pi){pi.done=!pi.done;save()}break}
     case 'plan-week':{var nn=+ds.n;PW=nn===0?weekStart(TD()):addDays(PW,nn*7);render();break}
     case 'new-plan':openModal({type:'plan',date:ds.d});break;
@@ -792,6 +813,44 @@ window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(
 (function(){var h=location.hash.slice(1);if(['today','planner','goals','habits','reports'].indexOf(h)>-1)tab=h})();
 var local=normalize(loadLocal());
 S=local||seedState((navigator.language||'uk').toLowerCase().indexOf('en')===0?'en':'uk');
+function initFirebase(cfg){
+  var V='10.14.1',B='https://www.gstatic.com/firebasejs/'+V+'/';
+  function load(src){return new Promise(function(res,rej){var el=document.createElement('script');el.src=src;el.onload=res;el.onerror=rej;document.head.appendChild(el)})}
+  function ready(){return window.firebase&&firebase.auth&&firebase.firestore}
+  var p=ready()?Promise.resolve():load(B+'firebase-app-compat.js').then(function(){return load(B+'firebase-auth-compat.js')}).then(function(){return load(B+'firebase-firestore-compat.js')});
+  setSync('slow');
+  p.then(function(){
+    firebase.initializeApp(cfg);
+    var auth=firebase.auth(),db=firebase.firestore();
+    FB={auth:auth,provider:new firebase.auth.GoogleAuthProvider(),user:null};
+    auth.onAuthStateChanged(function(u){
+      if(unsub){unsub();unsub=null}
+      ref=null;FB.user=u||null;
+      if(!u){setSync('signin');render();return}
+      ref=db.doc('users/'+u.uid+'/data/tracker');
+      var key='fb-linked-'+u.uid,linked=false;
+      try{linked=!!localStorage.getItem(key)}catch(e){}
+      function mark(){try{localStorage.setItem(key,'1')}catch(e){}linked=true}
+      setSync('slow');render();
+      var slow=setTimeout(function(){if(sync!=='saved')setSync('slow')},10000);
+      unsub=ref.onSnapshot(function(snap){
+        if(snap.metadata&&snap.metadata.hasPendingWrites)return;
+        var data=snap.exists?snap.data():null;
+        if(snap.metadata&&snap.metadata.fromCache&&!data)return;
+        clearTimeout(slow);
+        if(data&&data.v){
+          if(!linked||(data.updated||0)>(S.updated||0)){
+            S=normalize(data);mark();migrate();saveLocal();applyTheme();render();
+            if(pending){pending=false;dirty=true;setSync('saving');flush()}else setSync('saved');
+          }else if((S.updated||0)>(data.updated||0)){dirty=true;setSync('saving');flush()}
+          else setSync('saved');
+        }else{
+          mark();migrate();pending=false;S.updated=S.updated||Date.now();saveLocal();dirty=true;setSync('saving');flush();
+        }
+      },function(){clearTimeout(slow);setSync('error')});
+    });
+  }).catch(function(){setSync('error')});
+}
 var pending=false;
 function migrate(){
   var ch=false;S.mig=S.mig||{};
@@ -803,6 +862,8 @@ function migrate(){
 if(local)migrate();
 applyTheme();render();
 (function(){
+  var fc=window.FIREBASE_CONFIG;
+  if(fc&&fc.apiKey&&String(fc.apiKey).indexOf('PASTE')<0){initFirebase(fc);return}
   var c=window.claude;
   if(!c||!c.use){setSync('local');return}
   Promise.all([c.use('user'),c.use('db')]).then(function(r){
