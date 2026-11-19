@@ -7,7 +7,11 @@
 <meta name="theme-color" content="#0a0c0a" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Маленькі кроки">
+<meta name="apple-mobile-web-app-title" content="Кроки">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <title>Маленькі кроки</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -271,6 +275,16 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 @media (max-width:620px){.prow .chk{width:32px;height:32px}.pgrid{grid-template-columns:minmax(0,1fr)}}
 .sync.signin{display:inline-flex!important;font-size:13px!important;gap:6px!important;background:var(--deep);color:var(--deep-ink);padding:8px 14px;border-radius:999px;font-weight:700}
 .sync.signin::before{background:var(--flame)}
+.quick{display:grid;gap:14px;max-width:560px;margin:0 auto}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.qhead .dl{font-weight:800;font-size:20px;text-transform:capitalize;letter-spacing:-.01em}
+.quick .card{padding:16px}
+.quick .row{padding:14px 0}
+.quick .chk{width:42px;height:42px}
+.quick .prow{padding:12px 0;align-items:center}
+.quick .prow .t{font-size:15px}
+.quick .step button{width:42px;height:42px}
+.quick .step span{min-width:52px;font-size:16px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 <script>
@@ -335,7 +349,7 @@ function svg(n,size,fill){size=size||20;return '<svg class="ic" width="'+size+'"
 
 /* ---------- i18n ---------- */
 var T={
-uk:{app:'Маленькі кроки',nav_today:'Сьогодні',nav_planner:'Планер',nav_goals:'Цілі',nav_habits:'Звички',nav_reports:'Звіти',theme:'Змінити тему',
+uk:{app:'Маленькі кроки',q_all:'Відкрити весь застосунок',q_habits:'Звички',q_tasks:'Завдання',q_plan:'За планом',q_empty:'На сьогодні нічого немає',nav_today:'Сьогодні',nav_planner:'Планер',nav_goals:'Цілі',nav_habits:'Звички',nav_reports:'Звіти',theme:'Змінити тему',
  hero1:'Маленькі звички,',hero2:'великі зміни.',hero_p:'Став цілі, розбивай їх на щоденні та місячні кроки й тримай вогник звичок.',
  hi_m:'Доброго ранку',hi_d:'Добрий день',hi_e:'Добрий вечір',hi_n:'Доброї ночі',
  today:'Сьогодні',back_today:'До сьогодні',prev_day:'Попередній день',next_day:'Наступний день',
@@ -361,7 +375,7 @@ uk:{app:'Маленькі кроки',nav_today:'Сьогодні',nav_planner:'
  ex_note:'Це приклади, щоб показати, як усе працює. Видали їх, коли будеш готова.',ex_rm:'Видалити приклади',
  s_signin:'Увійти',signin_t:'Увійти через Google, щоб синхронізувати пристрої',signout:'Вийти',s_saved:'Збережено',s_saving:'Збереження…',s_local:'Лише на цьому пристрої',s_error:'Не вдалося зберегти',s_slow:'Чекаю на синхронізацію',
  lines:['Прогрес, а не досконалість.','Маленькі кроки щодня ведуть до великих результатів.','Не пропускай двічі поспіль.','Почни з найменшого кроку.','Постійність важливіша за швидкість.']},
-en:{app:'Small Steps',nav_today:'Today',nav_planner:'Planner',nav_goals:'Goals',nav_habits:'Habits',nav_reports:'Reports',theme:'Switch theme',
+en:{app:'Small Steps',q_all:'Open the full app',q_habits:'Habits',q_tasks:'Tasks',q_plan:'Planned',q_empty:'Nothing for today',nav_today:'Today',nav_planner:'Planner',nav_goals:'Goals',nav_habits:'Habits',nav_reports:'Reports',theme:'Switch theme',
  hero1:'Small habits,',hero2:'big changes.',hero_p:'Set goals, break them into daily and monthly steps, and keep your habit flames burning.',
  hi_m:'Good morning',hi_d:'Good afternoon',hi_e:'Good evening',hi_n:'Good night',
  today:'Today',back_today:'Back to today',prev_day:'Previous day',next_day:'Next day',
@@ -510,6 +524,7 @@ function findPlan(id){return S.plan.filter(function(p){return p.id===id})[0]}
 function catName(c){return t('c_'+(c==='interview'||c==='python'||c==='video'?c:'other'))}
 
 /* ---------- views ---------- */
+var ROUTES=['today','planner','goals','habits','reports','quick'];
 var TABICON={today:'cal',planner:'list',goals:'target',habits:'flame',reports:'chart'};
 function syncEl(){
   if(sync==='signin')return '<button id="sync" class="sync signin" data-act="signin" title="'+esc(t('signin_t'))+'">'+t('s_signin')+'</button>';
@@ -697,7 +712,31 @@ function viewPlanner(){
     '<div class="pgrid">'+cards+'</div>';
 }
 
+function viewQuick(){
+  var td=TD(),items=dayItems(td),done=items.filter(Boolean).length,pct=items.length?Math.round(done/items.length*100):0;
+  var plan=S.plan.filter(function(p){return p.date===td}).sort(function(a,b){var x=a.time||'99:99',y=b.time||'99:99';return x<y?-1:x>y?1:0});
+  var tasks='';
+  S.goals.forEach(function(g){g.tasks.forEach(function(k){if(k.type==='daily'&&k.created>td)return;tasks+=todayTaskRow(g,k,td)})});
+  var hb='';
+  S.habits.forEach(function(h){
+    if(h.kind==='build'){var on=!!h.done[td],st=habitStreak(h);
+      hb+='<div class="row '+(on?'ok':'')+'"><span class="chip">'+svg(h.icon,18)+'</span><div class="grow"><div class="t">'+esc(h.title)+'</div><div class="s"><span class="fl '+(st?'':'off')+'">'+svg('flame',14,st>0)+st+'</span></div></div><button class="chk '+(on?'on':'')+'" data-act="habit-toggle" data-h="'+h.id+'" data-d="'+td+'" aria-label="'+esc(h.title)+'">'+svg('check',20)+'</button></div>';
+    }else{
+      hb+='<div class="row"><span class="chip">'+svg(h.icon,18)+'</span><div class="grow"><div class="t">'+esc(h.title)+'</div></div><span class="fl">'+svg('flame',16,true)+daysTxt(Math.max(0,diffDays(h.since,td)))+'</span></div>';
+    }
+  });
+  var pl=plan.map(function(p){return '<div class="prow '+(p.done?'dn':'')+'"><button class="chk '+(p.done?'on':'')+'" data-act="plan-toggle" data-p="'+p.id+'" aria-label="'+esc(p.title)+'">'+svg('check',20)+'</button><div style="flex:1;min-width:0"><div class="t">'+esc(p.title)+'</div><div class="s">'+(p.time?esc(p.time)+' · ':'')+catName(p.cat)+'</div></div></div>'}).join('');
+  function sec(title,body){return body?'<section class="card"><div class="card-h"><h2>'+title+'</h2></div><div class="group">'+body+'</div></section>':''}
+  var all=sec(t('q_habits'),hb)+sec(t('q_plan'),pl)+sec(t('q_tasks'),tasks);
+  return '<div class="quick"><div class="qhead"><div><div class="dl">'+fmt(td,{weekday:'long',day:'numeric',month:'long'})+'</div><div class="muted small">'+t('done')+': '+done+'/'+items.length+'</div></div><div class="pill num" style="font-size:18px">'+pct+'%</div></div><div class="bar" style="margin:0 0 4px"><i style="width:'+pct+'%"></i></div>'+(all||'<section class="card"><div class="empty"><p>'+t('q_empty')+'</p></div></section>')+
+    '<button class="btn ghost" data-act="nav" data-k="today" style="justify-content:center">'+t('q_all')+'</button></div>';
+}
+
 function render(){
+  if(tab==='quick'){
+    $('#app').innerHTML='<header class="top" style="justify-content:space-between"><div class="brand"><span class="logo">'+svg('leaf',20)+'</span><span>'+t('app')+'</span></div><div class="tools">'+syncEl()+'<div class="seg" role="group"><button class="'+(S.lang==='uk'?'on':'')+'" data-act="lang" data-k="uk">UA</button><button class="'+(S.lang==='en'?'on':'')+'" data-act="lang" data-k="en">EN</button></div><button class="icon-btn" data-act="theme" aria-label="'+t('theme')+'">'+svg(isDark()?'sun':'moon',18)+'</button></div></header><main>'+viewQuick()+'</main>';
+    return;
+  }
   var v=tab==='planner'?viewPlanner():tab==='goals'?viewGoals():tab==='habits'?viewHabits():tab==='reports'?viewReports():viewToday();
   $('#app').innerHTML=header()+'<main>'+banner()+v+'</main>';
 }
@@ -807,10 +846,10 @@ document.addEventListener('submit',function(e){
   closeModal();save();
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&M)closeModal()});
-window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(['today','planner','goals','habits','reports'].indexOf(h)>-1&&h!==tab){tab=h;render()}});
+window.addEventListener('hashchange',function(){var h=location.hash.slice(1);if(ROUTES.indexOf(h)>-1&&h!==tab){tab=h;render()}});
 
 /* ---------- init ---------- */
-(function(){var h=location.hash.slice(1);if(['today','planner','goals','habits','reports'].indexOf(h)>-1)tab=h})();
+(function(){var h=location.hash.slice(1);if(ROUTES.indexOf(h)>-1)tab=h})();
 var local=normalize(loadLocal());
 S=local||seedState((navigator.language||'uk').toLowerCase().indexOf('en')===0?'en':'uk');
 function initFirebase(cfg){
@@ -890,5 +929,6 @@ applyTheme();render();
 })();
 })();
 </script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}</script>
 </body>
 </html>
